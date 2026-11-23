@@ -1,0 +1,38 @@
+{
+  "name": "AutoSub AI 字幕",
+  "identifier": "io.github.iina-autosub",
+  "version": "0.1.0",
+  "description": "打开电影一次，自动或一键基于 Apple Silicon MLX 离线/云端生成适配 IINA 的中日双语字幕并热加载。",
+  "author": {
+    "name": "luftcc",
+    "url": "https://github.com/luftcc/iina-autosub"
+  },
+  "ghRepo": "luftcc/iina-autosub",
+  "entry": "main.js",
+  "globalEntry": "global.js",
+  "permissions": ["show-osd", "file-system", "network-request"],
+  "allowedDomains": ["127.0.0.1", "localhost"],
+  "sidebarTab": {
+    "name": "AI 字幕"
+  },
+  "preferencesPage": "ui/preferences.html",
+  "preferenceDefaults": {
+    "auto_generate": true,
+    "auto_open_sidebar": true,
+    "subtitle_style": "bilingual",
+    "output_format": "ass",
+    "source_lang": "ja",
+    "translator_mode": "local",
+    "local_model": "auto",
+    "local_model_custom": "",
+    "asr_model": "whisper-large-v3-turbo",
+    "cloud_base_url": "https://api.deepseek.com/v1",
+    "cloud_api_key": "",
+    "cloud_model": "deepseek-chat",
+    "use_embedded_source_sub": true,
+    "center_channel_boost": true,
+    "hf_mirror": false,
+    "engine_host": "127.0.0.1",
+    "engine_port": 18421
+  }
+}

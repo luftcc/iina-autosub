@@ -1,0 +1,1 @@
+"""Core subtitle generation pipeline."""

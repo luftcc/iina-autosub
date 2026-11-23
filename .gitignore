@@ -1,0 +1,26 @@
+# Python / uv
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Build & distribution artifacts
+dist/
+build/
+*.iinaplgz
+
+# Local caches / downloaded models / test outputs
+.cache/
+demo_media/
+*.wav
+*.mp4
+*.mkv
+*.ass
+*.srt
+!engine/tests/fixtures/*
+
+# macOS
+.DS_Store
+*.log

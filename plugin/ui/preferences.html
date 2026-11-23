@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <title>AutoSub AI 字幕偏好设置</title>
+  <style>
+    * { box-sizing: border-box; }
+    html { margin: 0; padding: 0; }
+    body {
+      padding: 16px;
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.5;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    }
+    h3 {
+      margin: 16px 0 8px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid rgba(128, 128, 128, 0.25);
+      padding-bottom: 4px;
+    }
+    h3:first-child { margin-top: 0; }
+    p { margin: 0; }
+    small, .small { font-size: 11px; }
+    .secondary { color: rgba(128, 128, 128, 0.85); }
+    .pref-section { margin-bottom: 12px; }
+    .pref-help { margin-top: 3px; }
+    .radio-group { margin-top: 4px; line-height: 24px; }
+    input[type="text"], input[type="password"], input[type="number"] {
+      width: 100%;
+      margin-top: 3px;
+      padding: 4px 6px;
+      font-size: 12.5px;
+    }
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+    }
+  </style>
+</head>
+<body>
+  <h3>1. 触发方式与字幕样式</h3>
+
+  <div class="pref-section">
+    <label>
+      <input type="checkbox" data-type="bool" data-pref-key="auto_generate" />
+      打开本地电影时，若未检测到中文字幕则自动开始一次性生成并热加载
+    </label>
+    <p class="small secondary pref-help">
+      关闭后，打开电影仅轻提示，可通过快捷键 <code>⌘⇧S</code> 或右侧「AI 字幕」侧边栏一键触发。
+    </p>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      <input type="checkbox" data-type="bool" data-pref-key="auto_open_sidebar" />
+      开始生成字幕时自动弹出「AI 字幕控制面板」，方便实时查看进度
+    </label>
+    <p class="small secondary pref-help">
+      随时可按 <code>⌘⇧A</code> 或通过菜单栏「插件 → AutoSub AI 字幕 → 打开 AI 字幕面板」呼出，也可在浏览器打开 <code>http://127.0.0.1:18421</code> 查看详细状态。
+    </p>
+  </div>
+
+  <div class="pref-section">
+    默认字幕样式：
+    <div class="radio-group">
+      <div>
+        <label><input type="radio" name="subtitle_style" value="bilingual" data-pref-key />
+          中日双语（推荐，上方简体中文 PingFang SC + 下方日文 Hiragino Sans）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="subtitle_style" value="zh_only" data-pref-key />
+          仅简体中文</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="pref-section">
+    字幕文件格式：
+    <div class="radio-group">
+      <div>
+        <label><input type="radio" name="output_format" value="ass" data-pref-key />
+          <code>.ass</code>（推荐，IINA 原生精致双语字体与描边样式）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="output_format" value="srt" data-pref-key />
+          <code>.srt</code>（纯文本，完全沿用 IINA 全局字幕样式偏好）</label>
+      </div>
+    </div>
+  </div>
+
+  <h3>2. 翻译引擎（本地免费离线 / 云端 API 一键切换）</h3>
+
+  <div class="pref-section">
+    翻译模式：
+    <div class="radio-group">
+      <div>
+        <label><input type="radio" name="translator_mode" value="local" data-pref-key />
+          纯本地免费离线模型（Apple Silicon MLX，无需 API Key，隐私不出本机）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="translator_mode" value="cloud" data-pref-key />
+          云端大模型 API（OpenAI 兼容格式，支持 DeepSeek / OpenAI / Gemini / Claude）</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="pref-section">
+    本地离线模型档位（仅「本地模式」生效）：
+    <div class="radio-group">
+      <div>
+        <label><input type="radio" name="local_model" value="auto" data-pref-key />
+          自动按本机统一内存推荐（16GB→7B / 24-36GB→8B / 48GB+→14B；64GB+ 可手动切 32B）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="local_model" value="light-7b" data-pref-key />
+          轻量 7B（<code>mlx-community/Qwen2.5-7B-Instruct-4bit</code>）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="local_model" value="balanced-8b" data-pref-key />
+          均衡 8B（<code>mlx-community/Qwen3-8B-4bit</code>）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="local_model" value="pro-14b" data-pref-key />
+          高质 14B（<code>mlx-community/Qwen3-14B-4bit</code>）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="local_model" value="ultra-32b" data-pref-key />
+          旗舰 32B（<code>mlx-community/Qwen3-32B-4bit</code>）</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      自定义本地 MLX 模型（留空则使用上方档位，支持填入 Sakura-LLM 等任意 Hugging Face MLX 仓库）：
+      <input type="text" data-pref-key="local_model_custom" placeholder="例如：mlx-community/Qwen3-14B-4bit" />
+    </label>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      云端 API Base URL（仅「云端模式」生效）：
+      <input type="text" data-pref-key="cloud_base_url" placeholder="https://api.deepseek.com/v1" />
+    </label>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      云端 API Key：
+      <input type="password" data-pref-key="cloud_api_key" placeholder="sk-..." />
+    </label>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      云端模型名：
+      <input type="text" data-pref-key="cloud_model" placeholder="deepseek-chat / gpt-4o-mini / gemini-2.5-flash" />
+    </label>
+  </div>
+
+  <h3>3. 日语语音识别（ASR）与电影优化</h3>
+
+  <div class="pref-section">
+    日语语音识别模型：
+    <div class="radio-group">
+      <div>
+        <label><input type="radio" name="asr_model" value="whisper-large-v3-turbo" data-pref-key />
+          Whisper Large v3 Turbo（推荐默认，词级时间轴稳定、兼顾中英日混合）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="asr_model" value="whisper-large-v3-turbo-4bit" data-pref-key />
+          Whisper Large v3 Turbo 4-bit（体积小、内存占用更低）</label>
+      </div>
+      <div>
+        <label><input type="radio" name="asr_model" value="kotoba-whisper-v2.1" data-pref-key />
+          Kotoba Whisper v2.1（纯日语语料微调，纯日剧/日本电影专精）</label>
+      </div>
+    </div>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      <input type="checkbox" data-type="bool" data-pref-key="use_embedded_source_sub" />
+      影片若已内嵌日语文本字幕，直接提取翻译（跳过语音识别，数十秒完成）
+    </label>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      <input type="checkbox" data-type="bool" data-pref-key="center_channel_boost" />
+      5.1 / 7.1 环绕声电影自动增强中置人声声道（FC），减少配乐/爆炸干扰
+    </label>
+  </div>
+
+  <div class="pref-section">
+    <label>
+      <input type="checkbox" data-type="bool" data-pref-key="hf_mirror" />
+      使用 Hugging Face 国内镜像源（<code>hf-mirror.com</code>）下载首次本地模型
+    </label>
+  </div>
+
+  <h3>4. 本地引擎地址</h3>
+  <div class="pref-section">
+    <label>
+      端口（默认 18421）：
+      <input type="number" data-pref-key="engine_port" style="width: 120px" />
+    </label>
+  </div>
+</body>
+</html>

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AutoSub AI 字幕</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #161922;
+      --card: rgba(255, 255, 255, 0.06);
+      --border: rgba(255, 255, 255, 0.13);
+      --text: #f1f5f9;
+      --muted: #94a3b8;
+      --input-bg: #1e2330;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+    }
+    body {
+      padding: 14px;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans", sans-serif;
+      font-size: 12.5px;
+      line-height: 1.45;
+      user-select: none;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--card);
+      border: 1px solid var(--border);
+    }
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+    }
+    .dot.ok { background: var(--ok); }
+    .dot.err { background: var(--err); }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 11px;
+      margin-bottom: 10px;
+    }
+    .label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .movie-name {
+      font-weight: 500;
+      word-break: break-all;
+      font-size: 12.5px;
+    }
+    .sub-status {
+      margin-top: 5px;
+      font-size: 11.5px;
+      color: var(--muted);
+    }
+    .sub-status.ok { color: var(--ok); }
+    select, button, input[type="text"] {
+      font-family: inherit;
+      font-size: 12px;
+      border-radius: 7px;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 6px 8px;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      outline: none;
+    }
+    .seg-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .seg-btn {
+      padding: 5px 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .seg-btn.active {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: var(--accent);
+      color: var(--text);
+      font-weight: 500;
+    }
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin: 8px 0 8px;
+    }
+    .step {
+      text-align: center;
+      font-size: 10.5px;
+      padding: 4px 2px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      border: 1px solid transparent;
+    }
+    .step.done {
+      background: rgba(34, 197, 94, 0.16);
+      color: var(--ok);
+    }
+    .step.active {
+      background: rgba(59, 130, 246, 0.22);
+      border-color: var(--accent);
+      color: var(--text);
+      font-weight: 600;
+    }
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 9px 12px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+    .btn-secondary {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+    }
+    .btn-danger {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid rgba(239, 68, 68, 0.45);
+      background: rgba(239, 68, 68, 0.16);
+      color: #fca5a5;
+      cursor: pointer;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 7px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.14);
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      transition: width 0.25s ease;
+    }
+    .progress-fill.done { background: var(--ok); }
+    .progress-meta {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 6px;
+      font-size: 11.5px;
+    }
+    .detail {
+      margin-top: 4px;
+      font-size: 11px;
+      color: var(--muted);
+      word-break: break-all;
+    }
+    .error-box {
+      margin-top: 6px;
+      padding: 7px 9px;
+      border-radius: 7px;
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      font-size: 11.5px;
+      word-break: break-word;
+    }
+    .warn-box {
+      margin-top: 6px;
+      padding: 6px 8px;
+      border-radius: 7px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fcd34d;
+      font-size: 11px;
+    }
+    .footer-hint {
+      font-size: 11px;
+      color: var(--muted);
+      text-align: center;
+      margin-top: 8px;
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">AutoSub AI 字幕</div>
+    <div class="badge" id="engineBadge">
+      <span class="dot" id="engineDot"></span>
+      <span id="engineText">检测中...</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="label">当前影片</div>
+    <div class="movie-name" id="movieName">尚未打开本地影片</div>
+    <div class="sub-status" id="subStatus">打开本地日本电影即可自动或一键生成字幕</div>
+  </div>
+
+  <div class="card hidden" id="progressCard">
+    <div class="label">
+      <span id="stageLabel">处理中</span>
+      <span id="elapsedLabel">0:00</span>
+    </div>
+    <div class="steps" id="stepsRow">
+      <div class="step" data-step="0">音轨</div>
+      <div class="step" data-step="1">人声</div>
+      <div class="step" data-step="2">识别</div>
+      <div class="step" data-step="3">翻译</div>
+      <div class="step" data-step="4">加载</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-meta">
+      <span id="progressMsg">准备中...</span>
+      <strong id="progressPct">0%</strong>
+    </div>
+    <div class="detail" id="progressDetail"></div>
+    <div class="error-box hidden" id="errorBox"></div>
+  </div>
+
+  <div class="card hidden" id="engineOfflineCard">
+    <div class="label">本地推理引擎未连接</div>
+    <div class="detail" style="margin-bottom:8px;">请确认已执行 <code>./install.sh</code> 安装后台服务，或点击下方尝试唤醒。</div>
+    <button class="btn-secondary" id="wakeBtn">唤醒本地引擎</button>
+  </div>
+
+  <div class="card" id="controlsCard">
+    <div class="label">日语源音轨</div>
+    <select id="audioSelect">
+      <option value="">自动推荐日语原声轨</option>
+    </select>
+
+    <div class="label" style="margin-top:10px;">字幕样式</div>
+    <div class="seg-row">
+      <button class="seg-btn" id="styleBilingual">中日双语</button>
+      <button class="seg-btn" id="styleZhOnly">纯简体中文</button>
+    </div>
+
+    <div class="label" style="margin-top:10px;">日语语音识别模型 (ASR)</div>
+    <select id="asrSelect"></select>
+
+    <div class="label" style="margin-top:10px;">翻译引擎</div>
+    <div class="seg-row">
+      <button class="seg-btn" id="modeLocal">本地离线 (免费)</button>
+      <button class="seg-btn" id="modeCloud">云端 API</button>
+    </div>
+
+    <div id="localModelBox" style="margin-top:8px;">
+      <div class="label">本地翻译模型（修改后下次生成生效）</div>
+      <select id="localModelSelect"></select>
+      <div class="detail" id="localModelHint"></div>
+    </div>
+
+    <div id="cloudModelBox" class="hidden" style="margin-top:8px;">
+      <div class="label">云端模型名（如 deepseek-chat / gpt-4o-mini）</div>
+      <input type="text" id="cloudModelInput" placeholder="deepseek-chat" />
+      <div class="warn-box hidden" id="cloudKeyWarn">尚未填写 API Key，请前往「IINA 设置 → 插件 → AutoSub AI 字幕」填写。</div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-primary" id="generateBtn">一键生成中文字幕</button>
+    <button class="btn-danger hidden" id="cancelBtn">取消当前任务</button>
+    <button class="btn-secondary" id="regenBtn">强制重新生成（忽略已有中字）</button>
+    <button class="btn-secondary" id="dashboardBtn">在浏览器打开实时状态页</button>
+  </div>
+
+  <div class="footer-hint">快捷键：⌘⇧S 生成字幕 · ⌘⇧A 呼出面板</div>
+
+  <script>
+    const ACTIVE_STAGES = new Set([
+      "queued", "probing", "downloading_model", "extracting_audio",
+      "vad", "asr", "segmenting", "translating", "rendering"
+    ]);
+    const STAGE_NAMES = {
+      queued: "排队中",
+      probing: "分析影片",
+      downloading_model: "首次下载模型",
+      extracting_audio: "提取音轨",
+      vad: "检测人声",
+      asr: "日语语音识别",
+      segmenting: "优化时间轴",
+      translating: "上下文翻译",
+      rendering: "渲染 IINA 字幕",
+      done: "已完成并热加载",
+      cancelled: "已取消",
+      error: "生成失败"
+    };
+
+    let currentState = null;
+    const el = (id) => document.getElementById(id);
+
+    function fmtElapsed(sec) {
+      const s = Math.max(0, Math.floor(sec || 0));
+      const m = Math.floor(s / 60);
+      return `${m}:${String(s % 60).padStart(2, "0")}`;
+    }
+
+    function stageToStepIndex(stage, pct) {
+      if (stage === "done") return 5;
+      if (stage === "rendering") return 4;
+      if (stage === "translating" || (stage === "downloading_model" && pct >= 55)) return 3;
+      if (stage === "asr" || stage === "segmenting" || (stage === "downloading_model" && pct < 55)) return 2;
+      if (stage === "vad") return 1;
+      return 0;
+    }
+
+    function updateSteps(stage, pct) {
+      const idx = stageToStepIndex(stage, pct);
+      const nodes = document.querySelectorAll("#stepsRow .step");
+      nodes.forEach((node) => {
+        const s = Number(node.dataset.step);
+        node.classList.remove("done", "active");
+        if (s < idx) node.classList.add("done");
+        else if (s === idx && ACTIVE_STAGES.has(stage)) node.classList.add("active");
+      });
+    }
+
+    function renderModelSelects(health, prefs) {
+      // ASR models
+      const asrSel = el("asrSelect");
+      const asrList = (health && health.asr_presets) || [
+        { id: "whisper-large-v3-turbo", label: "Whisper Large v3 Turbo (推荐)", size_hint: "~1.6 GB", cached: false },
+        { id: "whisper-large-v3-turbo-4bit", label: "Whisper Large v3 Turbo 4-bit", size_hint: "~0.5 GB", cached: false },
+        { id: "kotoba-whisper-v2.1", label: "Kotoba Whisper v2.1 (纯日语)", size_hint: "~1.5 GB", cached: false }
+      ];
+      asrSel.innerHTML = "";
+      for (const m of asrList) {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `${m.cached ? "✅ " : "⬇ "}${m.label} (${m.cached ? "已缓存" : m.size_hint || ""})`;
+        asrSel.appendChild(opt);
+      }
+      asrSel.value = prefs.asr_model || "whisper-large-v3-turbo";
+
+      // Local LLM models
+      const llmSel = el("localModelSelect");
+      const llmList = (health && health.local_llm_presets) || [
+        { id: "light-7b", label: "轻量 7B (Qwen2.5-7B-4bit)", size_hint: "~4.4 GB", cached: false },
+        { id: "balanced-8b", label: "均衡 8B (Qwen3-8B-4bit)", size_hint: "~4.7 GB", cached: false },
+        { id: "pro-14b", label: "高质 14B (Qwen3-14B-4bit)", size_hint: "~8.3 GB", cached: false },
+        { id: "ultra-32b", label: "旗舰 32B (Qwen3-32B-4bit)", size_hint: "~18.4 GB", cached: false }
+      ];
+      const recShort = health && health.recommended_local_model ? health.recommended_local_model.split("/").pop() : "自动";
+      llmSel.innerHTML = "";
+      const autoOpt = document.createElement("option");
+      autoOpt.value = "auto";
+      autoOpt.textContent = `自动推荐 (${recShort})`;
+      llmSel.appendChild(autoOpt);
+      for (const m of llmList) {
+        const opt = document.createElement("option");
+        opt.value = m.id;
+        opt.textContent = `${m.cached ? "✅ " : "⬇ "}${m.label} (${m.cached ? "已缓存" : m.size_hint || ""})`;
+        llmSel.appendChild(opt);
+      }
+      llmSel.value = prefs.local_model || "auto";
+
+      if (prefs.local_model_custom && prefs.local_model_custom.trim()) {
+        el("localModelHint").textContent = `当前已启用自定义模型：${prefs.local_model_custom.trim()}`;
+      } else {
+        el("localModelHint").textContent = "标注「✅ 已缓存」的模型秒级启动，无需等待下载";
+      }
+    }
+
+    function render(state) {
+      currentState = state || {};
+      const health = state.health;
+      const probe = state.probe;
+      const job = state.job;
+      const prefs = state.prefs || {};
+
+      // Engine status
+      const dot = el("engineDot");
+      const engineText = el("engineText");
+      const offlineCard = el("engineOfflineCard");
+      if (health && health.status === "ok") {
+        dot.className = "dot ok";
+        engineText.textContent = `引擎在线 · ${health.memory_gb || "?"}GB`;
+        offlineCard.classList.add("hidden");
+      } else {
+        dot.className = "dot err";
+        engineText.textContent = "引擎未连接";
+        offlineCard.classList.remove("hidden");
+      }
+
+      // Movie info
+      el("movieName").textContent = state.videoName || "尚未打开本地影片";
+      const subStatus = el("subStatus");
+      if (!state.videoPath) {
+        subStatus.className = "sub-status";
+        subStatus.textContent = "打开本地日本电影即可自动或一键生成字幕";
+      } else if (probe && probe.existing_zh_subtitles && probe.existing_zh_subtitles.length > 0) {
+        subStatus.className = "sub-status ok";
+        subStatus.textContent = `已有外挂中字：${probe.existing_zh_subtitles[0].split("/").pop()}`;
+      } else if (probe && probe.embedded_zh_streams && probe.embedded_zh_streams.length > 0) {
+        subStatus.className = "sub-status ok";
+        subStatus.textContent = "影片已内嵌中文字幕";
+      } else if (probe && probe.embedded_source_text_streams && probe.embedded_source_text_streams.length > 0 && prefs.use_embedded_source_sub) {
+        subStatus.className = "sub-status";
+        subStatus.textContent = "检测到内嵌日语字幕，将直接提取翻译（跳过识别）";
+      } else {
+        subStatus.className = "sub-status";
+        subStatus.textContent = "未检测到中文字幕，可一键从电影音轨生成";
+      }
+
+      // Audio tracks
+      const select = el("audioSelect");
+      const prevVal = select.value;
+      select.innerHTML = "";
+      const autoOpt = document.createElement("option");
+      autoOpt.value = "";
+      autoOpt.textContent = "自动推荐日语原声轨";
+      select.appendChild(autoOpt);
+      if (probe && Array.isArray(probe.audio_tracks)) {
+        for (const t of probe.audio_tracks) {
+          const opt = document.createElement("option");
+          opt.value = String(t.stream_index);
+          const rec = t.stream_index === probe.recommended_audio_stream ? " [推荐]" : "";
+          const comm = t.is_commentary ? " [评论轨]" : "";
+          const lang = t.language || "und";
+          const title = t.title ? ` · ${t.title}` : "";
+          opt.textContent = `#${t.stream_index} ${lang} (${t.channels}ch ${t.codec})${title}${rec}${comm}`;
+          select.appendChild(opt);
+        }
+      }
+      select.value = prevVal;
+
+      // Style & model selectors
+      const style = prefs.subtitle_style || "bilingual";
+      el("styleBilingual").classList.toggle("active", style === "bilingual");
+      el("styleZhOnly").classList.toggle("active", style === "zh_only");
+
+      const mode = prefs.translator_mode || "local";
+      el("modeLocal").classList.toggle("active", mode === "local");
+      el("modeCloud").classList.toggle("active", mode === "cloud");
+      el("localModelBox").classList.toggle("hidden", mode !== "local");
+      el("cloudModelBox").classList.toggle("hidden", mode !== "cloud");
+
+      renderModelSelects(health, prefs);
+      if (document.activeElement !== el("cloudModelInput")) {
+        el("cloudModelInput").value = prefs.cloud_model || "deepseek-chat";
+      }
+      el("cloudKeyWarn").classList.toggle("hidden", mode !== "cloud" || Boolean(prefs.cloud_api_key && prefs.cloud_api_key.trim()));
+
+      // Progress card
+      const isRunning = Boolean(job && ACTIVE_STAGES.has(job.stage));
+      const progressCard = el("progressCard");
+      const errorBox = el("errorBox");
+      if (job) {
+        progressCard.classList.remove("hidden");
+        const pct = Math.round((job.progress || 0) * 100);
+        el("stageLabel").textContent = STAGE_NAMES[job.stage] || job.stage;
+        const fill = el("progressFill");
+        fill.style.width = `${pct}%`;
+        fill.classList.toggle("done", job.stage === "done");
+        el("progressPct").textContent = `${pct}%`;
+        el("progressMsg").textContent = job.message || "";
+        el("progressDetail").textContent = job.detail || (job.subtitle_path ? job.subtitle_path.split("/").pop() : "");
+        const endTs = isRunning ? Date.now() / 1000 : (job.updated_at || Date.now() / 1000);
+        el("elapsedLabel").textContent = job.created_at ? `已用 ${fmtElapsed(endTs - job.created_at)}` : "";
+        updateSteps(job.stage, pct);
+
+        if (job.stage === "error" && job.error) {
+          errorBox.textContent = job.error;
+          errorBox.classList.remove("hidden");
+        } else {
+          errorBox.classList.add("hidden");
+        }
+      } else {
+        progressCard.classList.add("hidden");
+      }
+
+      el("generateBtn").disabled = !state.videoPath || isRunning;
+      el("regenBtn").disabled = !state.videoPath || isRunning;
+      el("cancelBtn").classList.toggle("hidden", !isRunning);
+      el("generateBtn").classList.toggle("hidden", isRunning);
+    }
+
+    // Keep elapsed timer ticking smoothly every second while running
+    setInterval(() => {
+      if (currentState && currentState.job && ACTIVE_STAGES.has(currentState.job.stage) && currentState.job.created_at) {
+        el("elapsedLabel").textContent = `已用 ${fmtElapsed(Date.now() / 1000 - currentState.job.created_at)}`;
+      }
+    }, 1000);
+
+    function postToIina(name, data) {
+      if (window.iina && typeof window.iina.postMessage === "function") {
+        window.iina.postMessage(name, data);
+      } else if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.iina) {
+        window.webkit.messageHandlers.iina.postMessage([name, JSON.stringify(data || {})]);
+      }
+    }
+
+    el("generateBtn").addEventListener("click", () => {
+      const audioVal = el("audioSelect").value;
+      postToIina("start-generate", {
+        audioTrackIndex: audioVal === "" ? null : Number(audioVal),
+        forceRegenerate: false,
+      });
+    });
+
+    el("regenBtn").addEventListener("click", () => {
+      const audioVal = el("audioSelect").value;
+      postToIina("start-generate", {
+        audioTrackIndex: audioVal === "" ? null : Number(audioVal),
+        forceRegenerate: true,
+      });
+    });
+
+    el("cancelBtn").addEventListener("click", () => postToIina("cancel-job", {}));
+    el("wakeBtn").addEventListener("click", () => postToIina("wake-engine", {}));
+    el("dashboardBtn").addEventListener("click", () => postToIina("open-dashboard", {}));
+
+    el("styleBilingual").addEventListener("click", () => postToIina("update-quick-pref", { key: "subtitle_style", value: "bilingual" }));
+    el("styleZhOnly").addEventListener("click", () => postToIina("update-quick-pref", { key: "subtitle_style", value: "zh_only" }));
+    el("modeLocal").addEventListener("click", () => postToIina("update-quick-pref", { key: "translator_mode", value: "local" }));
+    el("modeCloud").addEventListener("click", () => postToIina("update-quick-pref", { key: "translator_mode", value: "cloud" }));
+
+    el("asrSelect").addEventListener("change", (e) => {
+      postToIina("update-quick-pref", { key: "asr_model", value: e.target.value });
+    });
+    el("localModelSelect").addEventListener("change", (e) => {
+      postToIina("update-quick-pref", { key: "local_model", value: e.target.value });
+    });
+    el("cloudModelInput").addEventListener("change", (e) => {
+      postToIina("update-quick-pref", { key: "cloud_model", value: e.target.value.trim() });
+    });
+
+    // Populate defaults immediately so the UI looks complete even before first state message
+    renderModelSelects(null, {});
+
+    function bootBridge() {
+      if (window.iina && typeof window.iina.onMessage === "function") {
+        window.iina.onMessage("state", (data) => render(data));
+        postToIina("ui-ready", {});
+      } else {
+        setTimeout(bootBridge, 80);
+      }
+    }
+    bootBridge();
+  </script>
+</body>
+</html>
